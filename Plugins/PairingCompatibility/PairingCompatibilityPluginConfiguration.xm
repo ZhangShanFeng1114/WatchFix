@@ -261,6 +261,18 @@ static BOOL WFPairingApplyDeviceSupportRange(BOOL enabled, NSDictionary<NSString
         return NO;
     }
 
+    // Reload only the daemons that consume NanoRegistry / pairedsync preferences.
+    // A restart failure does not invalidate a successful preference write; the
+    // existing manual "restart Watch services" action remains available as a fallback.
+    NSError *restartError = nil;
+    NSArray<NSString *> *reloadTargets = @[@"nanoregistryd", @"pairedsyncd", @"nanoregistrylaunchd"];
+    if (![WFPluginBridge restartExecutablesNamed:reloadTargets error:&restartError]) {
+        Log(@"Warning: Pairing preferences were written, but targeted service restart failed: %@",
+            restartError.localizedDescription ?: @"unknown error");
+    } else {
+        Log(@"Reloaded pairing preference consumers after %@ support range", enabled ? @"applying" : @"removing");
+    }
+
     return YES;
 }
 
